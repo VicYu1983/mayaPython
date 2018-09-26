@@ -1,61 +1,25 @@
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
+import sys
 
-
-
-    
-    #print geo1MeshInfo['triangles'][0]
-    
-    #geo2SeamVerts = getSeamVertsOn(selectionList, 2)
-
-    #pairedVertsDict = pairSeamVerts(geo1SeamVerts, geo2SeamVerts)
+sys.setrecursionlimit(2000)
+debugLog = False
 
 def getVertexInfo(objectList, objectNumber):
-    
     vertexInfo = {}
     vertexInfo['locations'] = []
-    #vertexInfo['triangles'] = []
-    
     def doPerVertex( vertexIter ):
         vertex = vertexIter.position()
-        #vid = vertexIter.index()
-        #connectedVerts = om.MIntArray()
-        #vertexIter.getConnectedVertices(connectedVerts)
-        #vertexInfo['triangles'].append( connectedVerts )
         vertexInfo['locations'].append( vertex )
         
     loopVertexAndDo( objectList, objectNumber, doPerVertex )   
     return vertexInfo
             
 def printPoint( position ):
-    print 'location:' + str(position[0]) + ' ' + str(position[1]) + ' ' + str(position[2])    
-'''    
-def findThirdPointByTwoVertex( tri1, loc2, vid1, vid2, fixedArray ):
-    
-    print( tri1[vid1] )
-    print( tri1[vid2] )
-    
-    vertex1Conntext = tri1[vid1];
-    vertex2Conntext = tri1[vid2];
-    
-    for v in vertex1Conntext:
-        if v in vertex2Conntext and not str(v) in fixedArray:
-            fixedArray[v] = loc2[v]
-            print 'save: ' + str(v)
-            
-def makeOneVertexLocationSameAnotherOne(meshInfo1, meshInfo2): 
-    locations1 = meshInfo1['locations']
-    locations2 = meshInfo2['locations']
-    
-    tri1 = meshInfo1['triangles']
-    tri2 = meshInfo2['triangles']
-    
-    fixedArray = {}
-    fixedArray['4'] = locations2[7]
-    findThirdPointByTwoVertex( tri1, locations2, 2, 6, fixedArray )
-'''   
+    if debugLog:
+        print 'location:' + str(position[0]) + ' ' + str(position[1]) + ' ' + str(position[2])    
+
 def loopVertexAndDo( objectList, objectNumber, method ):
     count = 0
-    selectedObject = om.MObject()
     iter = om.MItSelectionList(objectList, om.MFn.kGeometric)
     while not iter.isDone():
         count += 1
@@ -63,7 +27,7 @@ def loopVertexAndDo( objectList, objectNumber, method ):
         if (count != objectNumber):
             iter.next()
         else:
-            iter.getDependNode(selectedObject)
+            selectedObject = iter.getDependNode()
             vertexIter = om.MItMeshVertex(selectedObject)
             while not vertexIter.isDone():
                 method( vertexIter )
@@ -71,7 +35,6 @@ def loopVertexAndDo( objectList, objectNumber, method ):
                 
 def loopFacesAndDo( objectList, objectNumber, method ):
     count = 0
-    selectedObject = om.MObject()
     iter = om.MItSelectionList(objectList, om.MFn.kGeometric)
     while not iter.isDone():
         count += 1
@@ -79,7 +42,7 @@ def loopFacesAndDo( objectList, objectNumber, method ):
         if (count != objectNumber):
             iter.next()
         else:
-            iter.getDependNode(selectedObject)
+            selectedObject = iter.getDependNode()
             faceItor = om.MItMeshFaceVertex(selectedObject)
             while not faceItor.isDone():
                 method( faceItor )
@@ -88,7 +51,7 @@ def loopFacesAndDo( objectList, objectNumber, method ):
 def getFacesInfo(objectList, objectNumber):
     meshInfo = []
     def saveFaces(faceIter):
-        vertId = faceIter.vertId()
+        vertId = faceIter.vertexId()
         faceId = faceIter.faceId()
         try:
             meshInfo[faceIter.faceId()]
@@ -112,9 +75,8 @@ def findFaceIdByVertice( faceInfo, vertice ):
 def findNextFaceAssign(faceInfo, faceId, assign):
     face = faceInfo[faceId]
     newAssign = []
-    
-    print 'current vertex of face:' + str(face)
-    
+    if debugLog:
+        print 'current vertex of face:' + str(face)    
     for i, vertexId in enumerate( face ):
         if i == 0:
             v0 = face[len(face) - 1]
@@ -131,8 +93,8 @@ def findNextFaceAssign(faceInfo, faceId, assign):
         if v1 in assign and v2 in assign and v1 is assign[0]:
             newAssign = [v0, v1]   
             break
-         
-    print 'get new assign:' + str( newAssign )      
+    if debugLog:
+        print 'get new assign:' + str( newAssign )      
     return newAssign
            
     
@@ -142,11 +104,12 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
     if targetFaceId not in needFixFace:
         needFixFace.append( targetFaceId )
     else:
-        print 'faceId: %s fixed!' % str(targetFaceId)
+        print 'faceId: %s already processed! skip it.' % str(targetFaceId)
         return
     
-    print 'faceId: %s processing' % str(targetFaceId)
-    print 'assign: %s ' % str( assign )
+    print 'faceId: %s is processing' % str(targetFaceId)
+    if debugLog:
+        print 'assign: %s ' % str( assign )
     
     resortArrayByAssign = []
     newFirst = -1
@@ -166,7 +129,8 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
             newFirstTemp %= len( face )
         resortArrayByAssign.append( face[newFirstTemp] )
             
-    print 'resortArrayByAssign: %s' % str( resortArrayByAssign )            
+    if debugLog:
+        print 'resortArrayByAssign: %s' % str( resortArrayByAssign )            
     
     for i, vertexId in enumerate( resortArrayByAssign ):
         v1 = resortArrayByAssign[i]
@@ -181,54 +145,65 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
             needFixVertex.append( v2 )
         
         findFaces = findFaceIdByVertice( faceInfo, [v1, v2] )
-        print 'next faced: %s' % str( findFaces )
+        if debugLog:
+            print 'next faced: %s' % str( findFaces )
         for f in findFaces:
-            newAssign = findNextFaceAssign( faceInfo, f, [v1, v2] )
-            loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign )
-                    
-geo1Verts = om.MFloatPointArray()
-geo2Verts = om.MFloatPointArray()
-
-selectionList = om.MSelectionList()
-om.MGlobal.getActiveSelectionList(selectionList)
-
-faceInfo = getFacesInfo( selectionList, 1 )
-print faceInfo
-
-faceInfo2 = getFacesInfo( selectionList, 2 )
-print faceInfo2
-
-vertexInfo2 = getVertexInfo( selectionList, 2 )
-print vertexInfo2['locations'][0]
-
-print '-------------------AAA start-------------'
-
-needFixFace = []
-needFixVertex = []
-loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, 1, [5, 4] )
-
-print '-------------------BBB start-------------'
-
-needFixFace2 = []
-needFixVertex2 = []
-loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, 2, [4, 0] )
-
-print needFixFace
-print needFixFace2
-print needFixVertex
-print needFixVertex2
-
-
-def setPosition( vertexIter ):
-    mapIndex = needFixVertex.index( vertexIter.index() )
-    targetIndex = needFixVertex2[mapIndex]
-    vertexIter.setPosition( vertexInfo2['locations'][targetIndex] )
+            if f not in needFixFace:
+                newAssign = findNextFaceAssign( faceInfo, f, [v1, v2] )
+                loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign )
+                
+def executeCommand():            
+    selectionList = om.MGlobal.getActiveSelectionList()
     
-loopVertexAndDo( selectionList, 1, setPosition )
-
-
-
-
-#print needFixFace
-
-#makeOneVertexLocationSameAnotherOne( geo1MeshInfo, geo1MeshInfo2 )
+    faceInfo = getFacesInfo( selectionList, 1 )
+    #print faceInfo
+    
+    faceInfo2 = getFacesInfo( selectionList, 2 )
+    #print faceInfo2
+    
+    vertexInfo2 = getVertexInfo( selectionList, 2 )
+    #print vertexInfo2['locations'][0]
+    
+    needFixFace = []
+    needFixVertex = []
+    
+    #test cube
+    loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, 1, [5, 4] )
+    
+    # head model setting
+    #loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, 0, [2, 3] )
+    
+    needFixFace2 = []
+    needFixVertex2 = []
+    
+    #test cube
+    loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, 2, [4, 0] )
+    
+    # head model setting
+    #loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, 0, [2, 3] )
+    
+    if debugLog:
+        print needFixFace
+        print needFixFace2
+        print needFixVertex
+        print needFixVertex2
+    
+    def setPosition( vertexIter ):
+        mapIndex = needFixVertex.index( vertexIter.index() )
+        targetIndex = needFixVertex2[mapIndex]
+        vertexIter.setPosition( vertexInfo2['locations'][targetIndex] )
+        
+    loopVertexAndDo( selectionList, 1, setPosition )
+    
+    
+    '''
+    def setIndex( vertexIter ):
+        mapIndex = needFixVertex2.index( vertexIter.index() )
+        targetIndex = needFixVertex[mapIndex]
+        vertexIter.setIndex(1)
+       
+    
+    loopVertexAndDo( selectionList, 2, setIndex )
+    '''
+    
+executeCommand()    
