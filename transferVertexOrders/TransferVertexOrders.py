@@ -6,7 +6,7 @@ def maya_useNewAPI():
     pass
 
 sys.setrecursionlimit(2000)
-debugLog = False
+debugLog = True
 onTransferVertexOrdersUpdate = 'onTransferVertexOrdersUpdate'
 onTransferVertexOrdersDone = 'onTransferVertexOrdersDone'
 
@@ -191,10 +191,27 @@ def doEffect( params ):
         allCount = len(faceInfo)+len(faceInfo2)
         doneCount = len(needFixFace)+len(needFixFace2)
         om.MUserEventMessage.postUserEvent('onTransferVertexOrdersUpdate', float(doneCount)/float(allCount)*100) 
-
-    loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
-    loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
-
+    
+    toFaceIds = [1, 0]
+    fromFaceIds = [1, 0]
+    toVertId1s = [0, 2]
+    toVertId2s = [6, 4]
+    fromVertId1s = [2, 3]
+    fromVertId2s = [4, 5]
+    
+    for i in range(0, len(toFaceIds)):
+        toFaceId = toFaceIds[i]
+        fromFaceId = fromFaceIds[i]
+        toVertId1 = toVertId1s[i]
+        toVertId2 = toVertId2s[i]
+        fromVertId1 = fromVertId1s[i]
+        fromVertId2 = fromVertId2s[i]
+        loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
+        loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
+    
+    #loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
+    #loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
+    
     if debugLog:
         print needFixFace
         print needFixFace2
@@ -202,9 +219,13 @@ def doEffect( params ):
         print needFixVertex2
     
     def setPosition( vertexIter ):
-        mapIndex = needFixVertex.index( vertexIter.index() )
-        targetIndex = needFixVertex2[mapIndex]
-        vertexIter.setPosition( vertexInfo2['locations'][targetIndex] )
+        try:
+            mapIndex = needFixVertex.index( vertexIter.index() )
+            targetIndex = needFixVertex2[mapIndex]
+            vertexIter.setPosition( vertexInfo2['locations'][targetIndex] )
+        except:
+            if debugLog:
+                print ('have some element in one mesh...')
         
     loopVertexAndDo( selectionList, 1, setPosition )
     om.MUserEventMessage.postUserEvent('onTransferVertexOrdersDone') 
