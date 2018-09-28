@@ -1,5 +1,9 @@
-import maya.api.OpenMaya as om
 import sys
+import maya.api.OpenMaya as om
+import maya.cmds as cmds
+
+def maya_useNewAPI():
+    pass
 
 sys.setrecursionlimit(2000)
 debugLog = False
@@ -97,7 +101,6 @@ def findNextFaceAssign(faceInfo, faceId, assign):
         print 'get new assign:' + str( newAssign )      
     return newAssign
            
-    
 def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceId, assign):
     face = faceInfo[targetFaceId]
     
@@ -152,36 +155,35 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
                 newAssign = findNextFaceAssign( faceInfo, f, [v1, v2] )
                 loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign )
                 
-def executeCommand():            
+def doEffect( params ):     
+
+    toFaceId = int(params[3])
+    toVertId1 = int(params[4])
+    toVertId2 = int(params[5])
+    fromFaceId = int(params[0])
+    fromVertId1 = int(params[1])
+    fromVertId2 = int(params[2])
+    toMesh = params[7]
+    fromMesh = params[6]
+
+    cmds.select(clear=True)
+    cmds.select(toMesh)
+    cmds.select(fromMesh, add=True)
+
     selectionList = om.MGlobal.getActiveSelectionList()
     
     faceInfo = getFacesInfo( selectionList, 1 )
-    #print faceInfo
-    
     faceInfo2 = getFacesInfo( selectionList, 2 )
-    #print faceInfo2
-    
     vertexInfo2 = getVertexInfo( selectionList, 2 )
-    #print vertexInfo2['locations'][0]
     
     needFixFace = []
     needFixVertex = []
-    
-    #test cube
-    loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, 1, [5, 4] )
-    
-    # head model setting
-    #loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, 0, [2, 3] )
-    
+    loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2] )
+
     needFixFace2 = []
     needFixVertex2 = []
-    
-    #test cube
-    loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, 2, [4, 0] )
-    
-    # head model setting
-    #loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, 0, [2, 3] )
-    
+    loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2] )
+
     if debugLog:
         print needFixFace
         print needFixFace2
@@ -194,16 +196,39 @@ def executeCommand():
         vertexIter.setPosition( vertexInfo2['locations'][targetIndex] )
         
     loopVertexAndDo( selectionList, 1, setPosition )
-    
-    
-    '''
-    def setIndex( vertexIter ):
-        mapIndex = needFixVertex2.index( vertexIter.index() )
-        targetIndex = needFixVertex[mapIndex]
-        vertexIter.setIndex(1)
-       
-    
-    loopVertexAndDo( selectionList, 2, setIndex )
-    '''
-    
-executeCommand()    
+    print ('done!')
+
+class TransferVertexOrders( om.MPxCommand ):
+    kPluginCmdName = 'TransferVertexOrders'
+
+    def __init__(self):
+        om.MPxCommand.__init__(self)
+
+    @staticmethod
+    def cmdCreator():
+        return TransferVertexOrders()
+
+    def doIt(self, args):
+        doEffect( args.asStringArray(0) )
+
+def initializePlugin(plugin):
+    pluginFn = om.MFnPlugin(plugin)
+    try:
+        pluginFn.registerCommand(
+            TransferVertexOrders.kPluginCmdName, TransferVertexOrders.cmdCreator
+        )
+    except:
+        sys.stderr.write(
+            "Failed to register command: %s\n" % TransferVertexOrders.kPluginCmdName
+        )
+        raise
+
+def uninitializePlugin(plugin):
+    pluginFn = om.MFnPlugin(plugin)     
+    try:
+        pluginFn.deregisterCommand(TransferVertexOrders.kPluginCmdName) 
+    except:
+        sys.stderr.write(
+            "Failed to unregister command: %s\n" % TransferVertexOrders.kPluginCmdName
+        )
+
