@@ -1,7 +1,31 @@
 from PySide.QtGui import *
 import maya.OpenMayaUI as mui
+import maya.api.OpenMaya as om
 import shiboken
 import re
+
+def onTransferVertexOrdersUpdateMethod(percentage):
+    if not bar.isVisible():
+        bar.setVisible(True)
+    barLabel.setText('Please Wait...')
+    bar.setValue(int(percentage))
+    
+def onTransferVertexOrdersDoneMethod(evt): 
+    barLabel.setText('Done And Prepare For New One')  
+
+onTransferVertexOrdersUpdate = 'onTransferVertexOrdersUpdate'
+onTransferVertexOrdersDone = 'onTransferVertexOrdersDone'
+try:
+    om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersUpdate)
+    om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersDone)    
+except:
+    pass
+om.MUserEventMessage.registerUserEvent(onTransferVertexOrdersUpdate)
+om.MUserEventMessage.registerUserEvent(onTransferVertexOrdersDone)
+
+om.MUserEventMessage.addUserEventCallback(onTransferVertexOrdersUpdate, onTransferVertexOrdersUpdateMethod) 
+om.MUserEventMessage.addUserEventCallback(onTransferVertexOrdersDone, onTransferVertexOrdersDoneMethod) 
+
 
 def getMayaWindow():
     pointer = mui.MQtUtil.mainWindow()
@@ -66,6 +90,7 @@ def doIt():
     if len( passValue ) < 6:
         cmds.error( "values is not enough!" )
         return
+    bar.reset()
     passValue.append( txt_pickNames[0].text().split('.')[0] )   
     passValue.append( txt_pickNames[3].text().split('.')[0] )          
     maya.cmds.TransferVertexOrders(passValue)          
@@ -112,10 +137,20 @@ for i, btn in enumerate( btn_picks ):
             onBtnClick(index, target )
         return insideClick
     btn.clicked.connect( onClick(i, btn) )
-
+   
 btn_doIt = QPushButton('Do It!')
 btn_doIt.clicked.connect( doIt )
 verticalLayout.addWidget( btn_doIt )
+
+bar = QProgressBar()
+bar.setVisible(False)
+verticalLayout.addWidget(bar)  
+
+barLabel = QLabel('Prepare For Work')
+verticalLayout.addWidget(barLabel)  
+        
+
+
 
 
 

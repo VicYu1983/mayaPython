@@ -101,7 +101,7 @@ def findNextFaceAssign(faceInfo, faceId, assign):
         print 'get new assign:' + str( newAssign )      
     return newAssign
            
-def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceId, assign):
+def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceId, assign, callback):
     face = faceInfo[targetFaceId]
     
     if targetFaceId not in needFixFace:
@@ -111,6 +111,10 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
         return
     
     print 'faceId: %s is processing' % str(targetFaceId)
+
+    # callback for calculate percentage
+    callback()
+
     if debugLog:
         print 'assign: %s ' % str( assign )
     
@@ -153,7 +157,7 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
         for f in findFaces:
             if f not in needFixFace:
                 newAssign = findNextFaceAssign( faceInfo, f, [v1, v2] )
-                loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign )
+                loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign, callback )
                 
 def doEffect( params ):     
 
@@ -175,14 +179,19 @@ def doEffect( params ):
     faceInfo = getFacesInfo( selectionList, 1 )
     faceInfo2 = getFacesInfo( selectionList, 2 )
     vertexInfo2 = getVertexInfo( selectionList, 2 )
-    
+
     needFixFace = []
     needFixVertex = []
-    loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2] )
-
     needFixFace2 = []
     needFixVertex2 = []
-    loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2] )
+
+    def calculatePercentage():
+        allCount = len(faceInfo)+len(faceInfo2)
+        doneCount = len(needFixFace)+len(needFixFace2)
+        om.MUserEventMessage.postUserEvent('onTransferVertexOrdersUpdate', float(doneCount)/float(allCount)*100) 
+
+    loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
+    loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
 
     if debugLog:
         print needFixFace
@@ -196,6 +205,7 @@ def doEffect( params ):
         vertexIter.setPosition( vertexInfo2['locations'][targetIndex] )
         
     loopVertexAndDo( selectionList, 1, setPosition )
+    om.MUserEventMessage.postUserEvent('onTransferVertexOrdersDone') 
     print ('done!')
 
 class TransferVertexOrders( om.MPxCommand ):
