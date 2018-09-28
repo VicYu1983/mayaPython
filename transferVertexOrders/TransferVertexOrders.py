@@ -1,6 +1,7 @@
 import sys
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
+import json
 
 def maya_useNewAPI():
     pass
@@ -162,13 +163,15 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
                 newAssign = findNextFaceAssign( faceInfo, f, [v1, v2] )
                 loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign, callback )
                 
-def doEffect( params ):     
-    toFaceId = int(params[3])
-    toVertId1 = int(params[4])
-    toVertId2 = int(params[5])
-    fromFaceId = int(params[0])
-    fromVertId1 = int(params[1])
-    fromVertId2 = int(params[2])
+def doEffect( params ):    
+    params = json.loads(params[0])
+
+    toFaceIds = params[3]
+    toVertId1s = params[4]
+    toVertId2s = params[5]
+    fromFaceIds = params[0]
+    fromVertId1s = params[1]
+    fromVertId2s = params[2]
     toMesh = params[7]
     fromMesh = params[6]
 
@@ -192,13 +195,6 @@ def doEffect( params ):
         doneCount = len(needFixFace)+len(needFixFace2)
         om.MUserEventMessage.postUserEvent('onTransferVertexOrdersUpdate', float(doneCount)/float(allCount)*100) 
     
-    toFaceIds = [1, 0]
-    fromFaceIds = [1, 0]
-    toVertId1s = [0, 2]
-    toVertId2s = [6, 4]
-    fromVertId1s = [2, 3]
-    fromVertId2s = [4, 5]
-    
     for i in range(0, len(toFaceIds)):
         toFaceId = toFaceIds[i]
         fromFaceId = fromFaceIds[i]
@@ -208,9 +204,6 @@ def doEffect( params ):
         fromVertId2 = fromVertId2s[i]
         loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
         loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
-    
-    #loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
-    #loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
     
     if debugLog:
         print needFixFace
