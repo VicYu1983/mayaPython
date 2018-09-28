@@ -4,29 +4,24 @@ import maya.api.OpenMaya as om
 import shiboken
 import re
 
+# 讀取外挂
+def loadTransferVertexOrdersPlugin():
+    plugInFile = 'TransferVertexOrders.py'
+    maya.cmds.unloadPlugin(plugInFile)
+    maya.cmds.loadPlugin(plugInFile)    
+
+# 監聽TransferVertexOrders.py的事件，更新進度條
 def onTransferVertexOrdersUpdateMethod(percentage):
     if not bar.isVisible():
         bar.setVisible(True)
     barLabel.setText('Please Wait...')
     bar.setValue(int(percentage))
     
+# 監聽TransferVertexOrders.py的事件，顯示完成   
 def onTransferVertexOrdersDoneMethod(evt): 
     barLabel.setText('Done And Prepare For New One')  
 
-onTransferVertexOrdersUpdate = 'onTransferVertexOrdersUpdate'
-onTransferVertexOrdersDone = 'onTransferVertexOrdersDone'
-try:
-    om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersUpdate)
-    om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersDone)    
-except:
-    pass
-om.MUserEventMessage.registerUserEvent(onTransferVertexOrdersUpdate)
-om.MUserEventMessage.registerUserEvent(onTransferVertexOrdersDone)
-
-om.MUserEventMessage.addUserEventCallback(onTransferVertexOrdersUpdate, onTransferVertexOrdersUpdateMethod) 
-om.MUserEventMessage.addUserEventCallback(onTransferVertexOrdersDone, onTransferVertexOrdersDoneMethod) 
-
-
+# 取得maya本身的視窗
 def getMayaWindow():
     pointer = mui.MQtUtil.mainWindow()
     return shiboken.wrapInstance( long( pointer ), QWidget )
@@ -58,6 +53,7 @@ def addOneGroup(parentLayout, groupName, txt_pickNames, btn_picks):
     addOneRow( groupBoxLayout, 'VertA', txt_pickNames, btn_picks )
     addOneRow( groupBoxLayout, 'VertB', txt_pickNames, btn_picks )  
     
+# 把選取到的點或者面取出資料    
 def filterInfoFromValue( str ):
     regex = r"([a-zA-z]*[\d]*)[.]([a-zA-Z]*)[[](\d*)[]]"
     matches = re.search(regex, str, re.MULTILINE)  
@@ -77,10 +73,7 @@ def filterInfoFromValue( str ):
         return None
     
 def doIt():
-    plugInFile = 'TransferVertexOrders.py'
-    maya.cmds.unloadPlugin(plugInFile)
-    maya.cmds.loadPlugin(plugInFile)
-    
+    # 從UI中取出參數
     passValue = []
     for txt in txt_pickNames:
         valueStr = txt.text();
@@ -90,15 +83,25 @@ def doIt():
     if len( passValue ) < 6:
         cmds.error( "values is not enough!" )
         return
-    bar.reset()
+    
+    # 帶入要執行的物件名稱
     passValue.append( txt_pickNames[0].text().split('.')[0] )   
-    passValue.append( txt_pickNames[3].text().split('.')[0] )          
-    maya.cmds.TransferVertexOrders(passValue)          
-
+    passValue.append( txt_pickNames[3].text().split('.')[0] )
+    
+    # 呼叫外挂      
+    maya.cmds.TransferVertexOrders(passValue) 
+      
+    bar.reset()    
+    
 windowName = 'TranferVertexOrders'
-
 if cmds.window( windowName, exists=True):
     cmds.deleteUI( windowName, wnd=True )
+    
+loadTransferVertexOrdersPlugin()     
+
+# 注冊事件，更新及完成事件
+om.MUserEventMessage.addUserEventCallback('onTransferVertexOrdersUpdate', onTransferVertexOrdersUpdateMethod) 
+om.MUserEventMessage.addUserEventCallback('onTransferVertexOrdersDone', onTransferVertexOrdersDoneMethod)      
     
 window = QMainWindow(getMayaWindow())
 window.setObjectName( windowName )
@@ -137,15 +140,18 @@ for i, btn in enumerate( btn_picks ):
             onBtnClick(index, target )
         return insideClick
     btn.clicked.connect( onClick(i, btn) )
-   
+
+# 執行按鈕   
 btn_doIt = QPushButton('Do It!')
 btn_doIt.clicked.connect( doIt )
 verticalLayout.addWidget( btn_doIt )
 
+# 讀取條，執行時才會出現
 bar = QProgressBar()
 bar.setVisible(False)
 verticalLayout.addWidget(bar)  
 
+# 狀態説明
 barLabel = QLabel('Prepare For Work')
 verticalLayout.addWidget(barLabel)  
         

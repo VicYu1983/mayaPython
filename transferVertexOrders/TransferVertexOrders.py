@@ -7,6 +7,8 @@ def maya_useNewAPI():
 
 sys.setrecursionlimit(2000)
 debugLog = False
+onTransferVertexOrdersUpdate = 'onTransferVertexOrdersUpdate'
+onTransferVertexOrdersDone = 'onTransferVertexOrdersDone'
 
 def getVertexInfo(objectList, objectNumber):
     vertexInfo = {}
@@ -110,7 +112,8 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
         print 'faceId: %s already processed! skip it.' % str(targetFaceId)
         return
     
-    print 'faceId: %s is processing' % str(targetFaceId)
+    if debugLog:
+        print 'faceId: %s is processing' % str(targetFaceId)
 
     # callback for calculate percentage
     callback()
@@ -160,7 +163,6 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
                 loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, f, newAssign, callback )
                 
 def doEffect( params ):     
-
     toFaceId = int(params[3])
     toVertId1 = int(params[4])
     toVertId2 = int(params[5])
@@ -206,7 +208,9 @@ def doEffect( params ):
         
     loopVertexAndDo( selectionList, 1, setPosition )
     om.MUserEventMessage.postUserEvent('onTransferVertexOrdersDone') 
-    print ('done!')
+
+    if debugLog:
+        print ('done!')
 
 class TransferVertexOrders( om.MPxCommand ):
     kPluginCmdName = 'TransferVertexOrders'
@@ -232,6 +236,13 @@ def initializePlugin(plugin):
             "Failed to register command: %s\n" % TransferVertexOrders.kPluginCmdName
         )
         raise
+    try:
+        om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersUpdate)
+        om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersDone)    
+    except:
+        pass
+    om.MUserEventMessage.registerUserEvent(onTransferVertexOrdersUpdate)
+    om.MUserEventMessage.registerUserEvent(onTransferVertexOrdersDone)
 
 def uninitializePlugin(plugin):
     pluginFn = om.MFnPlugin(plugin)     
@@ -241,4 +252,6 @@ def uninitializePlugin(plugin):
         sys.stderr.write(
             "Failed to unregister command: %s\n" % TransferVertexOrders.kPluginCmdName
         )
+    om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersUpdate)
+    om.MUserEventMessage.deregisterUserEvent(onTransferVertexOrdersDone)    
 
