@@ -7,7 +7,7 @@ def maya_useNewAPI():
     pass
 
 sys.setrecursionlimit(2000)
-debugLog = True
+debugLog = False
 onTransferVertexOrdersUpdate = 'onTransferVertexOrdersUpdate'
 onTransferVertexOrdersDone = 'onTransferVertexOrdersDone'
 
