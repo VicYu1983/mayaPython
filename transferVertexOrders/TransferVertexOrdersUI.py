@@ -97,7 +97,6 @@ def onBtnClick( index, target ):
     if len( sel ) != 1:
         cmds.error( "you only can select only one vertex of face" )
     selstr = str(sel[0])
-    print( selstr )
     info = filterInfoFromValue( selstr ) 
     if index == 0 or index == 3:
         if info['isVertex']:
