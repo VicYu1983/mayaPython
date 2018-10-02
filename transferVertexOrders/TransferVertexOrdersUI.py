@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 from PySide.QtGui import *
 import maya.OpenMayaUI as mui
 import maya.api.OpenMaya as om
