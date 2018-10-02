@@ -1,6 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
+import math
 import sys
 
 def maya_useNewAPI():
@@ -14,6 +15,7 @@ def doOneObj(obj):
     dagPath = obj['dagPath']
     vertexTarget = obj['vertexTarget']
     vertexCurrent = obj['vertexCurrent']
+    vertexNormal = obj['vertexNormal']
     vertexTargetNormalized = obj['vertexTargetNormalized']
     previousLocation = obj['previousLocation']
 
@@ -29,23 +31,25 @@ def doOneObj(obj):
 
     currentLocation = objTransform.translation(om.MSpace.kTransform )
     velocity = currentLocation - previousLocation
+    velocityNormalized = velocity.normalize()
     obj['previousLocation'] = currentLocation
 
     vertexIter = om.MItMeshVertex(currentObj)
     while not vertexIter.isDone():
         vertId = vertexIter.index()
         vtxTargetPos = vertexTarget[vertId]
+        vtxTargetNormal = vertexNormal[vertId]
         vtxTargetPosNormalized = vertexTargetNormalized[vertId]
         vtxCurrentPos = vertexCurrent[vertId] * objMatrixInv
         diffVector = vtxTargetPos - vtxCurrentPos
 
         # 利用每個頂點到物件的坐標向量計算和前進方向的重合程度，越重合力量越大，結果為-1~1
-        faceAlongVelocity = vtxTargetPosNormalized * velocity.normalize()
+        faceAlongVelocity = ( vtxTargetPosNormalized + vtxTargetNormal ) / 2 * velocityNormalized
         # 把上述結果轉爲0~1
         faceAlongVelocity += 1
         faceAlongVelocity /= 2
         # 計算力道
-        easingForce = faceAlongVelocity * .8 + .2
+        easingForce = math.sqrt(faceAlongVelocity * .8) + .2
 
         # 如果距離差距過小，直接定位，不計算
         if diffVector.length() < .005:
@@ -58,6 +62,12 @@ def doOneObj(obj):
         vertexIter.setPosition( vtxCurrentPos )
         vertexIter.updateSurface()
         vertexIter.next()
+
+def hasData(checkObj):
+    for obj in tempData:
+        if checkObj == obj['target']:
+            return True
+    return False
 
 def doEffect():  
     global registerId, tempData     
@@ -74,6 +84,9 @@ def doEffect():
 
     while not geoList.isDone():
         currentObj = geoList.getDependNode()
+        if hasData( currentObj ):
+            geoList.next()
+            continue
         dagPath = geoList.getDagPath()
         objTransform = om.MFnTransform(dagPath.transform())
         objData = {
@@ -81,6 +94,7 @@ def doEffect():
             'vertexTarget':[],
             # 假定的頂點位置(global)
             'vertexCurrent':[],
+            'vertexNormal':[],
             # 把頂點的位置做單位向量后快取起來(local)
             'vertexTargetNormalized':[],
             # 目標物件
@@ -91,11 +105,14 @@ def doEffect():
             'previousLocation':objTransform.translation(om.MSpace.kTransform)
         }
         tempData.append(objData)
+
+        objMatrix = objTransform.transformation().asMatrix()
         vertexIter = om.MItMeshVertex(currentObj)
         while not vertexIter.isDone():
             objData['vertexTarget'].append(vertexIter.position())
+            objData['vertexNormal'].append(vertexIter.getNormal())
             objData['vertexTargetNormalized'].append(om.MVector( vertexIter.position()).normalize())
-            objData['vertexCurrent'].append(vertexIter.position())
+            objData['vertexCurrent'].append(vertexIter.position() * objMatrix)
             vertexIter.next()
         geoList.next()
 
@@ -114,6 +131,16 @@ def resetVertex():
                     vertId = vertexIter.index()
                     vertexIter.setPosition( vertexTarget[vertId] )
                     vertexIter.next()
+
+                dagPath = obj['dagPath']
+                objTransform = om.MFnTransform(dagPath.transform())
+                obj['previousLocation'] = objTransform.translation(om.MSpace.kTransform)
+
+                objMatrix = objTransform.transformation().asMatrix()
+                newVertexCurrent = []
+                for v in vertexTarget:
+                    newVertexCurrent.append( v * objMatrix )
+                obj['vertexCurrent'] = newVertexCurrent
         geoList.next()                
 
 def clearEffect():

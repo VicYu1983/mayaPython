@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from PySide.QtGui import *
 import maya.OpenMayaUI as mui
 import maya.api.OpenMaya as om
@@ -7,7 +7,8 @@ import shiboken
 # 讀取外挂
 def loadTransferVertexOrdersPlugin():
     plugInFile = 'EasingMoveVertex.py'
-    maya.cmds.loadPlugin(plugInFile)    
+    #maya.cmds.unloadPlugin(plugInFile)
+    maya.cmds.loadPlugin(plugInFile) 
 
 # 監聽TransferVertexOrders.py的事件，更新進度條
 def onTransferVertexOrdersUpdateMethod(percentage):
