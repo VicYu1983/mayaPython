@@ -17,7 +17,13 @@ def doOneObj(obj):
     vertexTargetNormalized = obj['vertexTargetNormalized']
     previousLocation = obj['previousLocation']
 
-    objTransform = om.MFnTransform(dagPath.transform())
+    # 場景上的物件有可能會被刪掉，這邊檢查是不是有例外，有的話代表被刪掉了。就把物件從tempData裏移除
+    try:
+        objTransform = om.MFnTransform(dagPath.transform())
+    except:
+        tempData.remove( obj )
+        return
+
     objMatrix = objTransform.transformation().asMatrix()
     objMatrixInv = objMatrix.inverse()
 
