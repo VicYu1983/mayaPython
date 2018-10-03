@@ -5,21 +5,10 @@ import maya.api.OpenMaya as om
 import shiboken
 
 # 讀取外挂
-def loadTransferVertexOrdersPlugin():
+def loadPlugin():
     plugInFile = 'EasingMoveVertex.py'
     #maya.cmds.unloadPlugin(plugInFile)
     maya.cmds.loadPlugin(plugInFile) 
-
-# 監聽TransferVertexOrders.py的事件，更新進度條
-def onTransferVertexOrdersUpdateMethod(percentage):
-    if not bar.isVisible():
-        bar.setVisible(True)
-    barLabel.setText('Please Wait...')
-    bar.setValue(int(percentage))
-    
-# 監聽TransferVertexOrders.py的事件，顯示完成   
-def onTransferVertexOrdersDoneMethod(evt): 
-    barLabel.setText('Done And Prepare For New One')  
 
 # 取得maya本身的視窗
 def getMayaWindow():
@@ -30,7 +19,7 @@ windowName = 'EasingMoveVertex'
 if cmds.window( windowName, exists=True):
     cmds.deleteUI( windowName, wnd=True )
     
-loadTransferVertexOrdersPlugin()       
+loadPlugin()       
     
 window = QMainWindow(getMayaWindow())
 window.setObjectName( windowName )
