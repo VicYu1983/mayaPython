@@ -1,66 +1,45 @@
-﻿# -*- coding: utf-8 -*-
+﻿from vicGui import BasicPluginUI
 from PySide.QtGui import *
-import maya.OpenMayaUI as mui
-import maya.api.OpenMaya as om
-import shiboken
 
-# 讀取外挂
-def loadPlugin():
-    plugInFile = 'EasingMoveVertex.py'
-    #maya.cmds.unloadPlugin(plugInFile)
-    maya.cmds.loadPlugin(plugInFile) 
+class EasingMoveVertexPlugin( BasicPluginUI ):
+    def _showWindow( self, pluginName):
+        BasicPluginUI._showWindow( self, pluginName )
+        
+        verticalLayout = QVBoxLayout(self.getMainWidget())
 
-# 取得maya本身的視窗
-def getMayaWindow():
-    pointer = mui.MQtUtil.mainWindow()
-    return shiboken.wrapInstance( long( pointer ), QWidget )
-    
-windowName = 'EasingMoveVertex'
-if cmds.window( windowName, exists=True):
-    cmds.deleteUI( windowName, wnd=True )
-    
-loadPlugin()       
-    
-window = QMainWindow(getMayaWindow())
-window.setObjectName( windowName )
-window.setWindowTitle( windowName )
-window.show()
+        groupBox = QGroupBox('EasingMoveVertex')
+        groupBoxLayout = QVBoxLayout()
+        groupBox.setLayout( groupBoxLayout )
+        verticalLayout.addWidget( groupBox )
+        
+        def onBtnAddEffectClick():
+            maya.cmds.EasingMoveVertex()
+            
+        def onBtnClearEffectClick():
+            if chk_alsoReset.isChecked():
+                onBtnResetEffectClick()
+            maya.cmds.EasingMoveVertexClear()       
+            
+        def onBtnResetEffectClick():
+            maya.cmds.EasingMoveVertexReset()      
+        
+        btn_addEffect = QPushButton('Add Effect')
+        btn_addEffect.clicked.connect( onBtnAddEffectClick )
+        groupBoxLayout.addWidget( btn_addEffect )
+        
+        btn_resetEffect = QPushButton('Reset Effect')
+        btn_resetEffect.clicked.connect( onBtnResetEffectClick )
+        groupBoxLayout.addWidget( btn_resetEffect )
+        
+        horizontalLayout = QHBoxLayout()
+        groupBoxLayout.addLayout( horizontalLayout )
+        
+        chk_alsoReset = QCheckBox('Also Reset')
+        horizontalLayout.addWidget( chk_alsoReset ) 
+        
+        btn_clearEffect = QPushButton('Clear Effect')
+        btn_clearEffect.clicked.connect( onBtnClearEffectClick )
+        horizontalLayout.addWidget( btn_clearEffect )
+        
+EasingMoveVertexPlugin( 'EasingMoveVertex.py' )
 
-mainWidget = QWidget()
-window.setCentralWidget( mainWidget )
-
-verticalLayout = QVBoxLayout(mainWidget)
-
-groupBox = QGroupBox('EasingMoveVertex')
-groupBoxLayout = QVBoxLayout()
-groupBox.setLayout( groupBoxLayout )
-verticalLayout.addWidget( groupBox )
-
-def onBtnAddEffectClick():
-    maya.cmds.EasingMoveVertex()
-    
-def onBtnClearEffectClick():
-    if chk_alsoReset.isChecked():
-        onBtnResetEffectClick()
-    maya.cmds.EasingMoveVertexClear()       
-    
-def onBtnResetEffectClick():
-    maya.cmds.EasingMoveVertexReset()      
-
-btn_addEffect = QPushButton('Add Effect')
-btn_addEffect.clicked.connect( onBtnAddEffectClick )
-groupBoxLayout.addWidget( btn_addEffect )
-
-btn_resetEffect = QPushButton('Reset Effect')
-btn_resetEffect.clicked.connect( onBtnResetEffectClick )
-groupBoxLayout.addWidget( btn_resetEffect )
-
-horizontalLayout = QHBoxLayout()
-groupBoxLayout.addLayout( horizontalLayout )
-
-chk_alsoReset = QCheckBox('Also Reset')
-horizontalLayout.addWidget( chk_alsoReset ) 
-
-btn_clearEffect = QPushButton('Clear Effect')
-btn_clearEffect.clicked.connect( onBtnClearEffectClick )
-horizontalLayout.addWidget( btn_clearEffect )
