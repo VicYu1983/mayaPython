@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-from vicGui import BasicPluginUI
+from vicGui import BasicUI
 from PySide.QtGui import *
 import maya.OpenMayaUI as mui
 import maya.api.OpenMaya as om
@@ -62,9 +62,9 @@ def filterInfoFromValue( str ):
     else:
         return None
 
-class TransferVertexOrdersPluginUI( BasicPluginUI ):
-    def _showWindow( self, pluginName):
-        BasicPluginUI._showWindow( self, pluginName )  
+class TransferVertexOrdersPluginUI( BasicUI ):
+    def _showWindow( self, uiName ):
+        BasicUI._showWindow( self, uiName )  
         
         verticalLayout = QVBoxLayout(self.getMainWidget())
 
@@ -188,7 +188,7 @@ class TransferVertexOrdersPluginUI( BasicPluginUI ):
         barLabel = QLabel('Prepare For Work')
         verticalLayout.addWidget(barLabel)  
              
-TransferVertexOrdersPluginUI('TransferVertexOrders.py')        
+TransferVertexOrdersPluginUI('TransferVertexOrders', 'TransferVertexOrders.py')        
 
 
 

@@ -1,9 +1,9 @@
-﻿from vicGui import BasicPluginUI
+﻿from vicGui import BasicUI
 from PySide.QtGui import *
 
-class EasingMoveVertexPlugin( BasicPluginUI ):
-    def _showWindow( self, pluginName):
-        BasicPluginUI._showWindow( self, pluginName )
+class EasingMoveVertexPlugin( BasicUI ):
+    def _showWindow( self, uiName):
+        BasicUI._showWindow( self, uiName )
         
         verticalLayout = QVBoxLayout(self.getMainWidget())
 
@@ -41,5 +41,5 @@ class EasingMoveVertexPlugin( BasicPluginUI ):
         btn_clearEffect.clicked.connect( onBtnClearEffectClick )
         horizontalLayout.addWidget( btn_clearEffect )
         
-EasingMoveVertexPlugin( 'EasingMoveVertex.py' )
+EasingMoveVertexPlugin( 'EasingMoveVertex', 'EasingMoveVertex.py' )
 
