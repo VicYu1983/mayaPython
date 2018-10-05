@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 class DataManager:
     __instance = None
 
@@ -51,3 +51,65 @@ print( m.getData('id'))
 
 m.removeData('id')
 '''
+
+from maya.api.OpenMaya import *
+
+class GameObj():
+    def __init__(self, name, dynamicBounding = True):
+        self.friction = .9
+        selection = MGlobal.getSelectionListByName( name )
+        self.__name = name
+        self.__transform = MFnTransform(selection.getDagPath(0).transform())  
+        self.__dynamicBounding = dynamicBounding  
+        if self.__dynamicBounding:
+            self.__bounding = MFnDagNode( selection.getDagPath(0) )
+        else:
+            self.__bounding = MFnDagNode( selection.getDagPath(0) ).boundingBox.transformUsing( self.getMatrix().inverse() )
+        self.velocity = MVector()
+        
+    def getPosition(self):
+        return self.__transform.translation( MSpace.kTransform )
+        
+    def setPosition(self, pos):
+        self.__transform.setTranslation( pos, MSpace.kTransform )
+        
+    def getRotation(self):
+        return self.__transform.rotation( MSpace.kTransform ) 
+        
+    def setRotation( self, rot ):
+         self.__transform.setRotation( rot, MSpace.kTransform ) 
+        
+    def getBoundingBox(self):
+        if self.__dynamicBounding:
+            return self.__bounding.boundingBox
+        else:
+            globalBoundingBox = MBoundingBox( self.__bounding )
+            globalBoundingBox.transformUsing( self.getMatrix() )
+            return globalBoundingBox
+        
+    def checkHit( self, gameObj ):
+        return self.getBoundingBox().intersects( gameObj.getBoundingBox() )
+        
+    def getMatrix( self ):
+        return self.__transform.transformation().asMatrix()
+        
+    def clone( self ):
+        cloneObj = duplicate( self.__name )
+        return GameObj( cloneObj[0] )
+        
+    def setName( self, name ):
+        select( self.__name )
+        rename( name )
+        select( clear=True )
+        
+    def update(self):
+        position = self.getPosition()
+        position += self.velocity
+        self.velocity *= self.friction
+        self.setPosition( position )
+        
+    
+        
+    
+        
+    
