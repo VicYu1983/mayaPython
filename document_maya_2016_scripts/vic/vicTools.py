@@ -54,19 +54,26 @@ m.removeData('id')
 
 from maya.api.OpenMaya import *
 from maya.cmds import *
+import sys
 
-class GameObj():
+class BasicObj():
     def __init__(self, name, dynamicBounding = True):
-        self.friction = .9
         selection = MGlobal.getSelectionListByName( name )
         self.__name = name
-        self.__transform = MFnTransform(selection.getDagPath(0).transform())  
-        self.__dynamicBounding = dynamicBounding  
+        self.__transform = MFnTransform( selection.getDagPath(0).transform())  
+        self.__dynamicBounding = dynamicBounding
+        
+        try:
+            self.__vertexIter = MItMeshVertex( selection.getDependNode(0) )
+            self.__mesh = MFnMesh( selection.getDagPath(0) )
+        except:
+            self.__vertexIter = None
+            self.__mesh = None
+            
         if self.__dynamicBounding:
             self.__bounding = MFnDagNode( selection.getDagPath(0) )
         else:
             self.__bounding = MFnDagNode( selection.getDagPath(0) ).boundingBox.transformUsing( self.getMatrix().inverse() )
-        self.velocity = MVector()
         
     def getPosition(self):
         return self.__transform.translation( MSpace.kTransform )
@@ -75,7 +82,21 @@ class GameObj():
         self.__transform.setTranslation( pos, MSpace.kTransform )
         
     def getRotation(self):
-        return self.__transform.rotation( MSpace.kTransform ) 
+        return self.__transform.rotation( MSpace.kTransform )
+        
+    def getAccelParams(self):
+        if self.hasVertex():
+            return self.__mesh.autoUniformGridParams()
+        return None
+        
+    def rayCast(self, raySource, rayDirection, distance = sys.maxint):
+        if self.hasVertex():
+            return self.__mesh.allIntersections(MFloatPoint(raySource),MFloatVector(rayDirection),MSpace.kTransform, distance, False);
+        return None
+        
+    # 内建的MVector*MMatrix不知道爲什麽不能用，要先把轉成MVector轉成MPoint類才行可以運算
+    def getPositionAsPoint(self):
+        return MPoint( self.getPosition() )
         
     def setRotation( self, rot ):
          self.__transform.setRotation( rot, MSpace.kTransform ) 
@@ -87,6 +108,12 @@ class GameObj():
             globalBoundingBox = MBoundingBox( self.__bounding )
             globalBoundingBox.transformUsing( self.getMatrix() )
             return globalBoundingBox
+            
+    def hasVertex(self):
+        return self.__vertexIter is not None
+            
+    def getVertexIter(self):
+        return self.__vertexIter
         
     def checkHit( self, gameObj ):
         return self.getBoundingBox().intersects( gameObj.getBoundingBox() )
@@ -96,12 +123,27 @@ class GameObj():
         
     def clone( self ):
         cloneObj = duplicate( self.__name )
-        return GameObj( cloneObj[0] )
+        cloneBasicObj = GameObj( cloneObj[0] )
+        cloneBasicObj.setPosition( self.getPosition() )
+        cloneBasicObj.setRotation( self.getRotation() )
+        return cloneBasicObj
         
     def setName( self, name ):
         select( self.__name )
         rename( name )
         select( clear=True )
+
+class GameObj(BasicObj):
+    def __init__(self, name, dynamicBounding = True):
+        BasicObj.__init__(self, name, dynamicBounding )
+        self.velocity = MVector()
+        self.friction = .9
+        
+    def clone( self ):
+        cloneBasicObj = BasicObj.clone( self )
+        cloneBasicObj.velocity = self.velocity
+        cloneBasicObj.friction = self.friction
+        return cloneBasicObj
         
     def update(self):
         position = self.getPosition()
@@ -109,8 +151,18 @@ class GameObj():
         self.velocity *= self.friction
         self.setPosition( position )
         
-    
+
+
         
-    
+
+        
+
+        
+
+        
+
+        
+
+
         
     
