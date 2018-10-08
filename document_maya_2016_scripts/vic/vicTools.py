@@ -91,7 +91,7 @@ class BasicObj():
         
     def rayCast(self, raySource, rayDirection, distance = sys.maxint):
         if self.hasVertex():
-            return self.__mesh.allIntersections(MFloatPoint(raySource),MFloatVector(rayDirection),MSpace.kTransform, distance, False);
+            return self.__mesh.closestIntersection(MFloatPoint(raySource),MFloatVector(rayDirection),MSpace.kTransform, distance, False);
         return None
         
     # 内建的MVector*MMatrix不知道爲什麽不能用，要先把轉成MVector轉成MPoint類才行可以運算
@@ -150,6 +150,8 @@ class GameObj(BasicObj):
         position += self.velocity
         self.velocity *= self.friction
         self.setPosition( position )
+        
+
         
 
 
