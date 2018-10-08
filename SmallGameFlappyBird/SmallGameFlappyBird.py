@@ -1,149 +1,207 @@
-from maya.cmds import *
+# -*- coding: utf-8 -*-
+from maya.api.OpenMaya import *
 from PySide.QtGui import *
-from vicTools import DataManager
-from vicGui import BasicUI
+from vic.vicTools import DataManager
+from vic.vicGui import BasicUI
 import random
 
-class gameManager():
-    def __init__(self, onDead):
-        self.__pilePrefab = GameObj('TubePrefab')
-        self.__player = GameObj('Player', False)
-        self.__player.friction = 1
-        self.__onDead = onDead
-        pass
+class MoveObj():
+    def __init__(self, name):
+        selection = MGlobal.getSelectionListByName( name )
+        self.__node = selection.getDependNode(0)
+        self.__transform = MFnTransform(selection.getDagPath(0).transform())    
+        self.__bounding = MFnDagNode( selection.getDagPath(0) ).boundingBox.transformUsing( self.getMatrix().inverse() )
+        self.velocity = MVector()
         
-    def __createPiles(self):
-        heights = [ random.random() * 6 - 3 for i in range(5) ]
+    def getPosition(self):
+        return self.__transform.translation( MSpace.kTransform )
         
-        for i, h in enumerate( heights ):
-            pile = self.__pilePrefab.clone()
-            pile.setName( 'pile' )
-            pile.velocity.x = -.2
-            pile.friction = 1
-            pile.setPosition( MVector( i * 7 + 2, heights[i], 0 ))
-            self.__bottomPiles.append( pile )
-            self.__allPiles.append( pile )        
-            
-        for i, h in enumerate( heights ):
-            pile = self.__pilePrefab.clone()
-            pile.setName( 'pile' )
-            pile.velocity.x = -.2
-            pile.friction = 1
-            pile.setRotation( MEulerRotation( 0, 0, 3.14159 ))
-            pile.setPosition( MVector( i * 7 + 2, heights[i] + 25, 0 ))
-            self.__topPiles.append( pile )
-            self.__allPiles.append( pile )      
+    def setPosition(self, pos):
+        self.__transform.setTranslation( pos, MSpace.kTransform )
         
-    def start(self):
-        self.__topPiles = []
-        self.__bottomPiles = []
-        self.__allPiles = []
-        self.__createPiles()
-        self.__player.setPosition( MVector( -7, 12, 0 ))
-        self.__player.velocity.y = .3
-        self.__time = 0
-        select(clear=True)
-        pass
+    def getBoundingBox(self):
+        globalBoundingBox = MBoundingBox( self.__bounding )
+        globalBoundingBox.transformUsing( self.getMatrix() )
+        return globalBoundingBox
         
-    def jump( self ):
-        self.__player.velocity.y += .5
+    def checkHit( self, bounding ):
+        return self.getBoundingBox().intersects( bounding )
         
-    def dead( self ):
-        if self.__onDead is not None:
-            self.__onDead()
-            
-    def getTime(self):
-        return self.__time
+    def getMatrix( self ):
+        return self.__transform.transformation().asMatrix()
         
     def update(self):
-        self.__time += 1
+        position = self.getPosition()
+        position += self.velocity
+        self.velocity *= .9
+        self.setPosition( position )
         
-        self.__player.velocity.y -= .03
-        self.__player.update()
+class GameManager():
+    onHitCandy = 'onHitCandy'
+    onDead = 'onDead'
+    def __init__(self):
+        self.player = MoveObj( "pCube1" )
+        self.candys = [MoveObj( "pSphere1" )]
+    def start(self):
+        self.player.setPosition( MVector())
+        self.dead = 0
+        self.power = 0
         
-        if self.__player.getPosition().y < 1.5:
-            self.dead()
-        elif self.__player.getPosition().y > 24:
-            self.dead()
-        
-        for p in self.__allPiles:
-            p.update()
+        for candy in self.candys:
+            candy.setPosition( MVector(random.random() * 16 - 8, 30, random.random() * 16 - 8 ))
             
-        for i, bottomPile in enumerate( self.__bottomPiles ):
-            topPile = self.__topPiles[i]
-            if topPile.checkHit( self.__player ):
-                self.dead()
-            if bottomPile.checkHit( self.__player ):
-                self.dead()
-            if bottomPile.getPosition().x < -17.5:
-                newHeight = random.random() * 6 - 3
-                bottomPile.setPosition( MVector( 17.5, newHeight, 0 ))
-                topPile.setPosition( MVector( 17.5, newHeight + 25, 0 ))
+    def update(self):
+        def checkWall(mobj):
+            mobjPos = mobj.getPosition()
+            if mobjPos.x > 10:
+                mobjPos.x = 10
+                mobj.velocity.x *= -.4
+                mobj.setPosition( mobjPos )
+            elif mobjPos.x < -10:
+                mobjPos.x = -10
+                mobj.velocity.x *= -.4
+                mobj.setPosition( mobjPos )
+            if mobjPos.z > 10:
+                mobjPos.z = 10
+                mobj.velocity.z *= -.4
+                mobj.setPosition( mobjPos )
+            elif mobjPos.z < -10:
+                mobjPos.z = -10
+                mobj.velocity.z *= -.4
+                mobj.setPosition( mobjPos )
                 
+        def checkHitPlayer(player, mobj):
+            if player.checkHit( mobj.getBoundingBox() ):
+                diff = mobj.getPosition() - player.getPosition()
+                if mobj.velocity.y < 0:
+                    mobj.velocity.y *= -2.5
+                    mobj.velocity.x += diff.x * .5
+                    mobj.velocity.z += diff.z * .5
+                    self.power += 1
+                    MUserEventMessage.postUserEvent(GameManager.onHitCandy) 
+                
+        def checkDead(mobj):
+            return mobj.getPosition().y < -20
+          
+        self.player.update()    
+        checkWall( self.player )
+        
+        for candy in self.candys:
+            candy.velocity.y -= .1
+            checkWall( candy )
+            checkHitPlayer( self.player, candy )
+            if checkDead( candy ):
+                candy.velocity.y *= -5
+                self.dead += 1
+                MUserEventMessage.postUserEvent(GameManager.onDead) 
+            candy.update()
+        
+game = None
+def gameStart():
+    global game
+    game = GameManager()
+    game.start()
     
-class AngryBirdUI(BasicUI):
-    def _showWindow( self, uiName ):
-        BasicUI._showWindow(self, uiName )
+    def onTimeUpdate(*args):
+        game.update()
+    
+    gameEnd()
+    
+    if not MUserEventMessage.isUserEvent(GameManager.onHitCandy):
+        MUserEventMessage.registerUserEvent(GameManager.onHitCandy)
+        MUserEventMessage.registerUserEvent(GameManager.onDead)
         
-        self.game = None
-        def onTimeUpdate(*args):
-            if self.game is not None:
-                self.game.update()
-                lbl_msg.setText('Score:' + str(self.game.getTime()))
-                
-        def onDead():
-            lbl_msg.setText('GameOver! Score:' + str(self.game.getTime()) + ' Please Try Again')
-            gameEnd()
-            
-        def gameJump():
-            if self.game is not None:
-                self.game.jump()
-            
-        def gameStart():
-            
-            try:
-                delete( 'pile*')
-            except:
-                pass
-                
-            self.game = gameManager(onDead)
-            self.game.start()
-            
-            gameEnd()
-            dataManager = DataManager.getInstance()
-            dataManager.setData( 'timeChangeEventId', MDGMessage.addTimeChangeCallback(onTimeUpdate))
-            
-        def gameEnd():
-            dataManager = DataManager.getInstance()
-            if dataManager.hasData('timeChangeEventId' ):
-                 MDGMessage.removeCallback( dataManager.getData('timeChangeEventId') )
-                 dataManager.removeData('timeChangeEventId')
-                 
-        mainLayout = QVBoxLayout( self.getMainWidget() )
+    dataManager = DataManager.getInstance()
+    dataManager.setData( 'timeChangeEventId', MDGMessage.addTimeChangeCallback(onTimeUpdate))
+    
+def gameEnd():
+    
+    if MUserEventMessage.isUserEvent(GameManager.onHitCandy):
+        MUserEventMessage.deregisterUserEvent(GameManager.onHitCandy)
+        MUserEventMessage.deregisterUserEvent(GameManager.onDead)
+    
+    dataManager = DataManager.getInstance()
+    if dataManager.hasData('timeChangeEventId'):
+        try:
+            MDGMessage.removeCallback( dataManager.getData('timeChangeEventId') )
+        except:
+            pass
+        dataManager.removeData( 'timeChangeEventId')
         
-        gameLayout = QHBoxLayout()
-        gameControllerBroup = QGroupBox('Controller')
-        gameControllerLayout = QHBoxLayout()
-        gameControllerBroup.setLayout( gameControllerLayout )
+def moveUp(speed):
+    if game is not None:
+        game.player.velocity.z += -speed
         
-        mainLayout.addLayout( gameLayout )
-        mainLayout.addWidget( gameControllerBroup )
+def moveDown(speed):
+    if game is not None:    
+        game.player.velocity.z += speed             
+        
+def moveLeft(speed):
+    if game is not None:
+        game.player.velocity.x += -speed
+        
+def moveRight(speed):
+    if game is not None:    
+        game.player.velocity.x += speed        
+
+class GameUI(BasicUI):
+    def _showWindow( self, uiName):
+        BasicUI._showWindow( self, uiName )
+        
+        vlayout = QVBoxLayout( self.getMainWidget() )
+        
+        grp_game = QGroupBox( 'Game' )
+        grp_game_layout = QHBoxLayout()
+        grp_game.setLayout( grp_game_layout )
+        
+        vlayout.addWidget( grp_game )
+        
+        grp_controller = QGroupBox('Controller')
+        grp_controller_layout = QVBoxLayout()
+        grp_controller.setLayout( grp_controller_layout )
+        
+        grp_controller_layout_layout1 = QHBoxLayout()
+        grp_controller_layout_layout2 = QHBoxLayout()
+        grp_controller_layout_layout3 = QHBoxLayout()
+        grp_controller_layout.addLayout( grp_controller_layout_layout1 )
+        grp_controller_layout.addLayout( grp_controller_layout_layout2 )
+        grp_controller_layout.addLayout( grp_controller_layout_layout3 )
+        
+        vlayout.addWidget( grp_controller )
         
         btn_start = QPushButton('Start')
         btn_start.clicked.connect( lambda : gameStart() )
-        gameLayout.addWidget( btn_start )
+        grp_game_layout.addWidget( btn_start )
         
         btn_end = QPushButton('End')
         btn_end.clicked.connect( lambda : gameEnd() )
-        gameLayout.addWidget( btn_end )
+        grp_game_layout.addWidget( btn_end )
         
-        btn_jump = QPushButton('Jump')
-        btn_jump.clicked.connect( lambda : gameJump() )
-        gameControllerLayout.addWidget( btn_jump )
+        btn_up = QPushButton('Up')
+        btn_up.clicked.connect( lambda : moveUp( 1 ))
+        grp_controller_layout_layout1.addWidget( btn_up )
         
-        lbl_msg = QLabel('Ready To Start')
-        mainLayout.addWidget( lbl_msg )
+        btn_left = QPushButton('<-')
+        btn_left.clicked.connect( lambda : moveLeft( 1 ))
+        grp_controller_layout_layout2.addWidget( btn_left )
         
-AngryBirdUI('AngryBirdUI')
+        btn_right = QPushButton('->')
+        btn_right.clicked.connect( lambda : moveRight( 1 ))
+        grp_controller_layout_layout2.addWidget( btn_right )
+        
+        btn_down = QPushButton('Down')
+        btn_down.clicked.connect( lambda : moveDown( 1 ))
+        grp_controller_layout_layout3.addWidget( btn_down )
+        
+GameUI('Small Game')
+    
+    
+
+
+
+
+
+
+
 
 

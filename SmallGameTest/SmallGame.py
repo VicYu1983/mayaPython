@@ -1,8 +1,8 @@
 ﻿# -*- coding: utf-8 -*-
 from maya.api.OpenMaya import *
 from PySide.QtGui import *
-from vicTools import DataManager
-from vicGui import BasicUI
+from vic.vicTools import DataManager
+from vic.vicGui import BasicUI
 import random
 
 class MoveObj():
