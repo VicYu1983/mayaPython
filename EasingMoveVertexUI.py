@@ -1,4 +1,4 @@
-﻿from vicGui import BasicUI
+﻿from vic.vicGui import BasicUI
 from PySide.QtGui import *
 
 class EasingMoveVertexPlugin( BasicUI ):

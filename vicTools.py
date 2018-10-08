@@ -53,6 +53,7 @@ m.removeData('id')
 '''
 
 from maya.api.OpenMaya import *
+from maya.cmds import *
 
 class GameObj():
     def __init__(self, name, dynamicBounding = True):

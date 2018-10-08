@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-from vicGui import BasicUI
+from vic.vicGui import BasicUI
 from PySide.QtGui import *
 import maya.OpenMayaUI as mui
 import maya.api.OpenMaya as om
