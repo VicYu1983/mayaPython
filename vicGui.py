@@ -3,12 +3,13 @@ import maya.cmds as cmds
 import maya.OpenMayaUI as mui
 import shiboken
 
-class BasicPluginUI():
-    def __init__(self, pluginName, debug = False):
-        self.__loadPlugin( pluginName, debug )
-        self._showWindow( pluginName )
+class BasicUI():
+    def __init__(self, uiName, pluginName = '', debug = False):
+        if pluginName is not '':
+            self.__loadPlugin( pluginName, debug )
+        self._showWindow( uiName)
         
-    def __loadPlugin( self, pluginName, debug = False ):
+    def __loadPlugin( self, pluginName , debug = False ):
         if debug:
             cmds.unloadPlugin( pluginName )
         cmds.loadPlugin( pluginName )
@@ -31,5 +32,7 @@ class BasicPluginUI():
         self.__window.show()
         
     def getMainWidget(self):
-        return self.__mainWidget    
+        return self.__mainWidget   
+        
+
         
