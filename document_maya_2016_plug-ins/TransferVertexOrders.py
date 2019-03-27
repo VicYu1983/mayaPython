@@ -1,3 +1,18 @@
+'''
+========================================================================================================
+功能：
+    把兩個一樣mesh但是對應的點id不同的模型調整成一樣的點id
+流程：
+    一、指定原來模型和目標模型的同位置的兩個相鄰點及一個面
+    二、分別從兩個模型指定的面的兩個相鄰點開始，依順序開始往外找面，把找到的點和面記錄下來。這樣就有了兩個模型對應id的資料表
+    三、有了對應id的資料表就開始把模型二的點位置複製給模型一上。完成
+使用：
+    一、把原來的模型A複製一個出來，稱作模型B
+    二、把模型B及要調整的模型C選取參照面及參照點
+    三、執行程式，模型B會被調整成我們要的成果
+========================================================================================================    
+'''
+
 import sys
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
@@ -122,6 +137,8 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
     if debugLog:
         print 'assign: %s ' % str( assign )
     
+    # 因爲原來【兩個模型所選取的點】在【點對應到的面】中順序是不一樣的，這裏要把它換成相同的順序
+    # 這樣開始往外找面的才會找到對應正確的面
     resortArrayByAssign = []
     newFirst = -1
     for i, vertexId in enumerate( face ):
@@ -143,6 +160,7 @@ def loopFaceAndCurrectPosition(faceInfo, needFixFace, needFixVertex, targetFaceI
     if debugLog:
         print 'resortArrayByAssign: %s' % str( resortArrayByAssign )            
     
+    # 以新的點的順序來往外找面及點，這樣子兩個模型才會可以找到對應的點及面
     for i, vertexId in enumerate( resortArrayByAssign ):
         v1 = resortArrayByAssign[i]
         if i == len(resortArrayByAssign) - 1:
@@ -202,7 +220,9 @@ def doEffect( params ):
         toVertId2 = toVertId2s[i]
         fromVertId1 = fromVertId1s[i]
         fromVertId2 = fromVertId2s[i]
+        # 記錄下模型一對應的點的id對照表
         loopFaceAndCurrectPosition( faceInfo, needFixFace, needFixVertex, toFaceId, [toVertId1, toVertId2], calculatePercentage )
+        # 記錄下模型二對應的點的id對照表
         loopFaceAndCurrectPosition( faceInfo2, needFixFace2, needFixVertex2, fromFaceId, [fromVertId1, fromVertId2], calculatePercentage )
     
     if debugLog:
@@ -220,6 +240,7 @@ def doEffect( params ):
             if debugLog:
                 print ('have some element in one mesh...')
         
+    # 開始對位
     loopVertexAndDo( selectionList, 1, setPosition )
     om.MUserEventMessage.postUserEvent('onTransferVertexOrdersDone') 
 
