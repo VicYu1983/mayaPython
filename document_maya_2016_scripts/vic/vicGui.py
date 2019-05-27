@@ -5,12 +5,13 @@ import shiboken
 
 class BasicUI():
     def __init__(self, uiName, pluginName = '', debug = False):
+        self.__debug = debug
         if pluginName is not '':
-            self.__loadPlugin( pluginName, debug )
+            self.__loadPlugin( pluginName )
         self._showWindow( uiName)
         
     def __loadPlugin( self, pluginName , debug = False ):
-        if debug:
+        if self.__debug:
             cmds.unloadPlugin( pluginName )
         cmds.loadPlugin( pluginName )
         
@@ -33,6 +34,9 @@ class BasicUI():
         
     def getMainWidget(self):
         return self.__mainWidget   
+
+    def isDebug(self):
+        return self.__debug
         
 
         
