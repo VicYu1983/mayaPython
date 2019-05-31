@@ -4,6 +4,7 @@ from PySide.QtGui import *
 import maya.OpenMayaUI as mui
 import json
 
+
 class BatchExportFBXUI( BasicUI ):
     def openPathDialog(self, do):
         dlg = QFileDialog()
@@ -28,7 +29,7 @@ class BatchExportFBXUI( BasicUI ):
         btn_setFrom.clicked.connect( onBtnSetFromClick )        
         horiLayout.addWidget( btn_setFrom )
         
-        fromText = 'D:\Vic\Git\MayaPython' if self.isDebug() else 'From:'
+        fromText = 'D:/Vic/Works/GJ/Maya' if self.isDebug() else 'From:'
         lbl_setFrom = QLabel(fromText )       
         lbl_setFrom.setMinimumSize(200,0)                
         horiLayout.addWidget( lbl_setFrom )
@@ -40,7 +41,7 @@ class BatchExportFBXUI( BasicUI ):
         btn_setTo.clicked.connect( onBtnSetToClick )        
         horiLayout.addWidget( btn_setTo )
         
-        toText = 'D:\Vic\Works\maya' if self.isDebug() else 'To:'
+        toText = 'D:/Vic/Works/GJ/FBX_maya' if self.isDebug() else 'To:'
         lbl_setTo = QLabel(toText)
         lbl_setTo.setMinimumSize(200,0)                        
         horiLayout.addWidget( lbl_setTo )        
@@ -58,4 +59,5 @@ class BatchExportFBXUI( BasicUI ):
         verticalLayout.addWidget( btn_execute )
         
 BatchExportFBXUI( 'BatchExportFBX', 'BatchExportFBX.py', True)
+
 
