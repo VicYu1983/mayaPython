@@ -26,10 +26,6 @@ for obj in objs:
     cmds.select(obj)
     pushObj.append({'name':obj, 'count':cmds.polyEvaluate( v=True )})
 
-# combine all mesh
-cmds.select(objs)
-cmds.polyUnite(n='result')
-
 # create root bone
 rootLocator = cmds.spaceLocator()
 
@@ -57,6 +53,10 @@ cmds.bakeResults( locators,
                     minimizeRotation=False,
                     at=['tx','ty','tz','rx','ry','rz'] )
                   
+# combine all mesh
+cmds.select(objs)
+cmds.polyUnite(n='result')
+
 # collect all bones and root bone for skin
 skinLocators = [rootLocator[0]]
 skinLocators.extend( locators )
@@ -69,7 +69,7 @@ cmds.select( skinLocators )
 cmds.select('result', add=True)
 
 # skin
-cmds.skinCluster(tsb=False,tst=True, bm=0, sm=0, nw=1, wd=0, mi=5, rui=True, ihs=False)
+cmds.skinCluster(tsb=False,tst=True, bm=0, sm=0, nw=1, wd=0, mi=5)
 
 # set skin weight 
 vertex_start = 0
