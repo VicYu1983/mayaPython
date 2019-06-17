@@ -78,6 +78,24 @@ for loca, mesh in zip(locators, pushObj):
     vertex_end += mesh['count']
     cmds.skinPercent( 'skinCluster1', 'result.vtx[{}:{}]'.format(vertex_start, vertex_end), transformValue=[(loca, 1)])
     vertex_start += mesh['count']
+    
+# disconnect some attribute, if not, can not import to UE4. I don't know why
+cmds.disconnectAttr('result.lockInfluenceWeights', 'skinCluster1.lockWeights[0]') 
+cmds.disconnectAttr('result.objectColorRGB', 'skinCluster1.influenceColor[0]')
+cmds.disconnectAttr('result.worldMatrix[0]', 'skinCluster1.matrix[0]')
+
+# delete original mesh and useless bindpose
+cmds.select(cl=True)
+cmds.select('bindPose1')
+cmds.delete()
+
+# delete all constraint
+cmds.select( locators )
+cmds.delete( cn=True )
+
+
+
+
 
 
 
