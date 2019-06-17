@@ -5,18 +5,14 @@ def copyKeys(fromObj, toObj, frameCopyStart = 0, frameCopyEnd = 100):
     cmds.copyKey(fromObj, time=(frameCopyStart, frameCopyEnd))
     cmds.pasteKey(toObj, o='replace', time=(frameCopyStart, frameCopyEnd))
     
-def bakeAnimation(fromObj, toObj, frameCopyStart = 0, frameCopyEnd = 100):
-    cmds.select(cl=True)
-    cmds.select(fromObj)
-    cmds.select(toObj, add=True)   
-    cmds.parentConstraint(mo=False, weight=1)
-    
 def createLocator( fromName, pos ):
     locaName = cmds.spaceLocator()
-    bakeAnimation( fromName, locaName )
+    cmds.select(cl=True)
+    cmds.select(fromName)
+    cmds.select(locaName, add=True)   
+    cmds.parentConstraint(mo=False, weight=1)    
     return locaName[0]
-
-
+    
 # get selected mesh
 objs = cmds.ls(sl=True, o=True)
 
@@ -92,7 +88,6 @@ cmds.delete()
 # delete all constraint
 cmds.select( locators )
 cmds.delete( cn=True )
-
 
 
 
