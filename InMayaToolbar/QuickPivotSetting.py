@@ -1,4 +1,10 @@
-﻿import maya.cmds as cmds
+﻿# 流程：
+# 一、選擇要導出的物件
+# 二、freeze transform
+# 三、點擊此按鈕
+# 四、刪除歷史記錄
+
+import maya.cmds as cmds
 from vic.vicTools import BasicObj
 from maya.api.OpenMaya import *
 

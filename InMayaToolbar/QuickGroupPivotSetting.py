@@ -1,3 +1,9 @@
+# 流程：
+# 一、選擇要導出的群組
+# 二、點擊此按鈕
+# 三、調整個別物件的中心點
+# 四、刪除歷史記錄
+
 import sys
 import maya.cmds as cmds
 from maya.api.OpenMaya import *
