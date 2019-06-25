@@ -30,6 +30,9 @@ for child_name in target_child:
     v_max.x = max( v_max.x, bbox_max.x )
     v_max.y = max( v_max.y, bbox_max.y )
     v_max.z = max( v_max.z, bbox_max.z )    
+    
+    v_targets[group_name]['v_min'] = v_min
+    v_targets[group_name]['v_max'] = v_max
 
 for group_name in v_targets:
     v_min = v_targets[group_name]['v_min']
@@ -37,17 +40,18 @@ for group_name in v_targets:
     v_targets[group_name]['v_target'] =  MVector((v_min.x+v_max.x)/2, (v_min.y+v_max.y)/2, v_min.z)
 
 target = cmds.ls(sl=True)
-for name in target:
-    obj_pos = MVector(cmds.getAttr('%s.translate' % name )[0])
+for group_name in target:
+    obj_pos = MVector(cmds.getAttr('%s.translate' % group_name )[0])
     v_target = v_targets[group_name]['v_target']
     v_move = v_target - obj_pos
     
-    cmds.select( name )
+    cmds.select( group_name )
     cmds.move( *v_target, ls=1 )
     
     for child_name in target_child:
-        inGroup = child_name.find( name ) != -1
-        if inGroup:         
+        isGroup = len(child_name.split('|')) > 1
+        inGroup = child_name.find( group_name ) != -1
+        if isGroup and inGroup:         
             child_old_pos = MVector(cmds.getAttr('%s.translate' % child_name )[0])
             cmds.select( child_name )
             cmds.move( *(child_old_pos - v_move), ls=1 )
