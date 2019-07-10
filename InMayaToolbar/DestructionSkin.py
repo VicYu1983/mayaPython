@@ -10,7 +10,7 @@ def createLocator( fromName, pos ):
     cmds.select(cl=True)
     cmds.select(fromName)
     cmds.select(locaName, add=True)   
-    cmds.parentConstraint(mo=False, weight=1)    
+    cmds.parentConstraint(mo=False, weight=1)
     return locaName[0]
     
 # get selected mesh
@@ -74,7 +74,11 @@ for loca, mesh in zip(locators, pushObj):
     vertex_end += mesh['count']
     cmds.skinPercent( 'skinCluster1', 'result.vtx[{}:{}]'.format(vertex_start, vertex_end), transformValue=[(loca, 1)])
     vertex_start += mesh['count']
-    
+
+# delete all constraint
+cmds.select( locators )
+cmds.delete( cn=True )
+
 # disconnect some attribute, if not, can not import to UE4. I don't know why
 cmds.disconnectAttr('result.lockInfluenceWeights', 'skinCluster1.lockWeights[0]') 
 cmds.disconnectAttr('result.objectColorRGB', 'skinCluster1.influenceColor[0]')
@@ -85,10 +89,9 @@ cmds.select(cl=True)
 cmds.select('bindPose1')
 cmds.delete()
 
-# delete all constraint
-cmds.select( locators )
-cmds.delete( cn=True )
-
+# delete useless node
+cmds.select( 'result' )
+mel.eval('doBakeNonDefHistory( 1, {"prePost" });')
 
 
 
