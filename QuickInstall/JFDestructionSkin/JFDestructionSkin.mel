@@ -27,6 +27,8 @@ global proc JFDestructionSkin()
 	python("_path = sys.path");
 	python("found=False\nfor p in _path:\n	if(p==\""+$ToolRoot+"\"):\n		found=True\nif(not found):\n	sys.path.append(\""+$ToolRoot+"\")");
 	python("import JFDestructionSkin");
+	python("reload(JFDestructionSkin)");
+	python("JFDestructionSkin.execute()");
 }
 
 JFDestructionSkin;
